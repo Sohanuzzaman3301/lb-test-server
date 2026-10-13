@@ -13,6 +13,7 @@
     /            - branded status page (shows which backend served you)
     /api/info    - JSON with backend + client + headers (good for LB persistence tests)
     /health      - plain "OK" for loadbalancer.org health checks (also /healthz, /lb-check)
+    /big?size=5  - bulk bytes for throughput tests (size=1..20 MB, default 5)
 
 .NOTES
   If you get "Access is denied" on Start():
@@ -51,6 +52,9 @@ function Get-LocalIps {
   } catch { return "unknown" }
 }
 $LocalIps = Get-LocalIps
+
+# ---- Bulk payload for throughput tests (/big). 20 MB of "X", sliced per request. ----
+$script:BigString = "X" * 20MB
 
 function HtmlEncode([string]$s) {
   if ($null -eq $s) { return "" }
@@ -175,6 +179,21 @@ while ($listener.IsListening) {
     }
     $json = ($obj | ConvertTo-Json -Depth 5)
     Write-Response $ctx $json "application/json; charset=utf-8" 200
+    continue
+  }
+
+  # ---- Bulk bytes for throughput tests ----
+  if ($path -eq "/big") {
+    $sizeMB = 5
+    $m = [regex]::Match($req.Url.Query, "size=(\d+)")
+    if ($m.Success) { $sizeMB = [Math]::Min(20, [Math]::Max(1, [int]$m.Groups[1].Value)) }
+    $chars = $sizeMB * 1MB
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($script:BigString.Substring(0, $chars))
+    $ctx.Response.StatusCode = 200
+    $ctx.Response.ContentType = "application/octet-stream"
+    $ctx.Response.ContentLength64 = $bytes.Length
+    $ctx.Response.OutputStream.Write($bytes, 0, $bytes.Length)
+    $ctx.Response.OutputStream.Close()
     continue
   }
 
