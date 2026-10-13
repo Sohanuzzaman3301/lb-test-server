@@ -13,29 +13,29 @@ Runs on any Windows Server with built-in PowerShell 5.1. No Python, no IIS, no i
 ```powershell
 # Allow script + open firewall + URL reservation (one-time)
 Set-ExecutionPolicy Bypass -Scope Process -Force
-netsh http add urlacl url=http://+:8080/ user=Everyone
-New-NetFirewallRule -DisplayName "LB-Test-8080" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8080
+netsh http add urlacl url=http://+:80/ user=Everyone
+New-NetFirewallRule -DisplayName "LB-Test-80" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 80
 ```
 3. Start it (different BackendName per server so you can tell them apart):
 ```powershell
 # Server 1:
-powershell -ExecutionPolicy Bypass -File C:\LBTest\LbTestServer.ps1 -Port 8080 -BackendName "WEB-01"
+powershell -ExecutionPolicy Bypass -File C:\LBTest\LbTestServer.ps1 -Port 80 -BackendName "WEB-01"
 # Server 2:
-powershell -ExecutionPolicy Bypass -File C:\LBTest\LbTestServer.ps1 -Port 8080 -BackendName "WEB-02"
+powershell -ExecutionPolicy Bypass -File C:\LBTest\LbTestServer.ps1 -Port 80 -BackendName "WEB-02"
 ```
 Or just double-click `Run-Server.bat` (then edit BackendName inside if needed).
 
 Verify locally on each backend:
 ```
-http://localhost:8080/          -> big colored backend name page
-http://localhost:8080/api/info  -> JSON
-http://localhost:8080/health    -> OK
+http://localhost:80/          -> big colored backend name page
+http://localhost:80/api/info  -> JSON
+http://localhost:80/health    -> OK
 ```
 
 ## 2. loadbalancer.org config
-- **VIP:** e.g. `http://192.168.1.100/` -> pool = `backend1:8080`, `backend2:8080`
+- **VIP:** e.g. `http://192.168.1.100/` -> pool = `backend1:80`, `backend2:80`
 - **Health check:** HTTP GET `/health`, expect `200` + body contains `OK`
-  - Layer7: set Check URL = `/health`, Check Port = `8080`
+  - Layer7: set Check URL = `/health`, Check Port = `80`
   - Layer4 DR/TUN/NAT: health check still works, but X-Forwarded-For will be `-` (expected — L4 preserves source IP, check Remote IP instead)
 - **Forwarding:** For L7 SNAT/proxy mode, enable `X-Forwarded-For` insertion so the test page shows real client IP.
 
@@ -58,6 +58,6 @@ Company: SmartData Technologies Limited, 2nd Floor, Rahman Mansion, 161 Motijhee
 For overnight soak tests, use NSSM or Task Scheduler to run the .ps1 on boot. Or keep the PowerShell window open.
 
 ## Troubleshooting
-- `Access is denied` on start -> run as Admin, or `netsh http add urlacl url=http://+:8080/ user=Everyone`
-- Page loads locally but not via VIP -> firewall on backend blocking 8080, or LB pool port wrong
+- `Access is denied` on start -> run as Admin, or `netsh http add urlacl url=http://+:80/ user=Everyone`
+- Page loads locally but not via VIP -> firewall on backend blocking 80, or LB pool port wrong
 - Port in use -> change `-Port 8081`

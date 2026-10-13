@@ -6,8 +6,8 @@
 
 .USAGE
   Run as Administrator:
-    powershell -ExecutionPolicy Bypass -File LbTestServer.ps1 -Port 8080
-    powershell -ExecutionPolicy Bypass -File LbTestServer.ps1 -Port 8080 -BackendName "WEB-01"
+    powershell -ExecutionPolicy Bypass -File LbTestServer.ps1 -Port 80
+    powershell -ExecutionPolicy Bypass -File LbTestServer.ps1 -Port 80 -BackendName "WEB-01"
 
   Endpoints:
     /            - branded status page (shows which backend served you)
@@ -16,11 +16,11 @@
 
 .NOTES
   If you get "Access is denied" on Start():
-    netsh http add urlacl url=http://+:8080/ user=Everyone
+    netsh http add urlacl url=http://+:80/ user=Everyone
   Or just run PowerShell as Administrator.
 #>
 param(
-  [int]$Port = 8080,
+  [int]$Port = 80,
   [string]$BackendName = $env:COMPUTERNAME
 )
 
